@@ -36,10 +36,19 @@ deploy:
   stage: deploy
   image: bitnami/kubectl:latest
   script:
+    # 디버그 정보 출력
+    - echo "Setting up kubeconfig..."
+    
     # kubeconfig 설정
     - mkdir -p $HOME/.kube
     - echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
     - chmod 600 $HOME/.kube/config
+    
+    # kubectl 버전 확인 (테스트 용도)
+    - kubectl version --client
+    
+    # 디버그: 배포 파일 존재 확인
+    - ls -la kubernetes/ || echo "Kubernetes directory not found"
     
     # 배포 파일 수정 및 적용
     - sed -i "s|\${DOCKER_REGISTRY}|$DOCKER_REGISTRY|g" kubernetes/frontend-deployment.yaml
