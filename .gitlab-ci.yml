@@ -4,7 +4,7 @@ stages:
   - deploy
 
 variables:
-  DOCKER_REGISTRY: localhost:5000
+  DOCKER_REGISTRY: registry.gitlab.com/rmsals2020/vue-login
   IMAGE_NAME: vue-login
 
 # 빌드 단계
