@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: vue-login
-        image: ${DOCKER_REGISTRY}/vue-login:latest
+        image: registry.gitlab.com/rmsals2020/vue-login/vue-login:latest
         ports:
         - containerPort: 80
         resources:
