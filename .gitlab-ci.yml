@@ -2,21 +2,20 @@ stages:
   - deploy
 
 deploy-job:
-  image: node:16
+  image: node:16  # Node.js 16 버전 사용
   cache:
     paths:
       - node_modules/
   only:
-    - main
+    - pushes
+    - main  # main 브랜치에 푸시될 때만 실행
   stage: deploy
   script:
-    - npm i -g @cloudtype/cli
-    - ctype login -t $API_KEY_TOKEN
-    # 디렉토리 생성
-    - mkdir -p ./.cloudtype
-    # vue-login.yaml 파일 생성
+    - npm i -g @cloudtype/cli  # Cloudtype CLI 설치
+    - ctype login -t $API_KEY_TOKEN  # API 키로 로그인
+    - ctype use main  # 프로젝트 사용 설정
     - |
-      cat <<EOF > ./vue-login.yaml
+      cat <<EOF >> ./.cloudtype/app.yaml
       name: vue-login
       app: web
       options:
@@ -31,7 +30,5 @@ deploy-job:
           branch: main
         preset: vue
       EOF
-    - cat ./vue-login.yaml
-    # 클라우드타입에 바로 배포
-    - cat ./.cloudtype/app.yaml
-    - ctype apply -f ./vue-login.yaml
+    - cat ./.cloudtype/app.yaml  # 생성된 설정 파일 확인
+    - ctype apply -f ./.cloudtype/app.yaml  # Cloudtype에 배포
