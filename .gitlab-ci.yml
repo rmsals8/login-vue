@@ -12,8 +12,13 @@ deploy-job:
   script:
     - npm i -g @cloudtype/cli
     - ctype login -t $API_KEY_TOKEN
+    
+    # 올바른 프로젝트로 전환
+    - ctype use @rmsals8/mariadb:main
+    
     # 디렉토리 생성
     - mkdir -p ./.cloudtype
+    
     # vue-login.yaml 파일 생성
     - |
       cat <<EOF > ./vue-login.yaml
@@ -32,5 +37,6 @@ deploy-job:
         preset: vue
       EOF
     - cat ./vue-login.yaml
+    
     # 클라우드타입에 바로 배포
     - ctype apply -f ./vue-login.yaml
