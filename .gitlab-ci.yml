@@ -33,4 +33,5 @@ deploy-job:
       EOF
     - cat ./vue-login.yaml
     # 클라우드타입에 바로 배포
+    - cat ./.cloudtype/app.yaml
     - ctype apply -f ./vue-login.yaml
