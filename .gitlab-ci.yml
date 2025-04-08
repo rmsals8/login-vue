@@ -13,7 +13,7 @@ deploy-job:
   script:
     - npm i -g @cloudtype/cli  # Cloudtype CLI 설치
     - ctype login -t $API_KEY_TOKEN  # API 키로 로그인
-    - ctype use test:main  # 프로젝트 사용 설정
+    - ctype use main  # 프로젝트 사용 설정
     - |
       cat <<EOF >> ./.cloudtype/app.yaml
       name: vue-login
