@@ -48,5 +48,14 @@ module.exports = {
   css: {
     // CSS 소스맵 비활성화
     sourceMap: false
+  },
+
+  filenameHashing: true,
+  
+  chainWebpack: config => {
+    // 현재 시간을 추가하여 빌드마다 다른 해시값 생성
+    const timestamp = Date.now();
+    config.output.filename(`assets/js/[name].[hash:8].${timestamp}.js`);
+    config.output.chunkFilename(`assets/js/[name].[hash:8].${timestamp}.js`);
   }
 };
