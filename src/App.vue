@@ -43,7 +43,7 @@ export default {
 <style>
 /* 전역 스타일 */
 body {
-  margin: 0;
+  margin: 1;
   padding: 0;
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
