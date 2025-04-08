@@ -32,31 +32,31 @@ package:
     - docker push $DOCKER_REGISTRY/$IMAGE_NAME:latest
 
 # Kubernetes 배포
-deploy:
-  stage: deploy
-  image: alpine:latest
-  script:
-    - apk add --no-cache bash curl
-    - |
-      # 배포 스크립트
-      set -e
+# deploy:
+#   stage: deploy
+#   image: alpine:latest
+#   script:
+#     - apk add --no-cache bash curl
+#     - |
+#       # 배포 스크립트
+#       set -e
       
-      # kubectl 설치
-      curl -LO "https://dl.k8s.io/release/v1.27.0/bin/linux/amd64/kubectl"
-      chmod +x kubectl
-      mv kubectl /usr/local/bin/
+#       # kubectl 설치
+#       curl -LO "https://dl.k8s.io/release/v1.27.0/bin/linux/amd64/kubectl"
+#       chmod +x kubectl
+#       mv kubectl /usr/local/bin/
       
-      # kubeconfig 설정
-      mkdir -p $HOME/.kube
-      echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
-      chmod 600 $HOME/.kube/config
+#       # kubeconfig 설정
+#       mkdir -p $HOME/.kube
+#       echo "$KUBE_CONFIG" | base64 -d > $HOME/.kube/config
+#       chmod 600 $HOME/.kube/config
       
-      # 배포 실행
-      kubectl version --client
-      ls -la kubernetes/ || echo "Kubernetes directory not found"
-      sed -i "s|\${DOCKER_REGISTRY}|$DOCKER_REGISTRY|g" kubernetes/frontend-deployment.yaml
-      sed -i "s|:latest|:$CI_COMMIT_SHORT_SHA|g" kubernetes/frontend-deployment.yaml
-      kubectl apply -f kubernetes/frontend-deployment.yaml
-      kubectl apply -f kubernetes/frontend-service.yaml
-  only:
-    - main
+#       # 배포 실행
+#       kubectl version --client
+#       ls -la kubernetes/ || echo "Kubernetes directory not found"
+#       sed -i "s|\${DOCKER_REGISTRY}|$DOCKER_REGISTRY|g" kubernetes/frontend-deployment.yaml
+#       sed -i "s|:latest|:$CI_COMMIT_SHORT_SHA|g" kubernetes/frontend-deployment.yaml
+#       kubectl apply -f kubernetes/frontend-deployment.yaml
+#       kubectl apply -f kubernetes/frontend-service.yaml
+#   only:
+#     - main
