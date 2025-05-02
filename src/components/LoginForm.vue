@@ -188,15 +188,33 @@ methods:{
     }
   },
   // 캡차 새로고침 메서드
-// 캡차 새로고침 메서드
+ 
 refreshCaptcha() {
   const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
-  // 캡차 이미지 갱신을 위해 타임스탬프 추가
-  this.captchaImageUrl = `${apiUrl}/api/captcha/image?timestamp=${new Date().getTime()}`;
-  this.loginform.captcha = ''; // 캡차 입력값 초기화
+  
+  // 이미지 요청을 XHR로 직접 수행하여 완료 확인
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', `${apiUrl}/api/captcha/image?timestamp=${new Date().getTime()}`, true);
+  xhr.withCredentials = true; // 중요: 쿠키 전송 활성화
+  
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      // 이미지 데이터를 Blob URL로 변환
+      const blob = new Blob([xhr.response], { type: 'image/jpeg' });
+      this.captchaImageUrl = URL.createObjectURL(blob);
+      console.log('캡차 이미지 로드 성공');
+    } else {
+      console.error('캡차 이미지 로드 실패:', xhr.status);
+    }
+    
+    // 캡차 입력값 초기화
+    this.loginform.captcha = '';
+  };
+  
+  xhr.responseType = 'blob';
+  xhr.send();
 },
 
-// 음성 캡차 재생 메서드
 // 음성 캡차 재생 메서드 수정
 playAudioCaptcha() {
   // 이미 로딩 중이면 중복 재생 방지
@@ -207,23 +225,23 @@ playAudioCaptcha() {
   // API URL 설정
   const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
   
-  // 먼저 캡차 이미지를 다시 로드하여 세션 초기화
-  fetch(`${apiUrl}/api/captcha/image?timestamp=${new Date().getTime()}`, {
-    credentials: 'include' // 쿠키 포함
-  })
-  .then(() => {
-    // 오디오 요소 가져오기
-    const audioElement = document.getElementById('captchaAudio');
-    
-    // 타임스탬프를 추가하여 캐싱 방지
+  // 로딩 상태 표시
+  this.isAudioLoading = true;
+  this.captchaError = '';
+  
+  // 오디오 요소 가져오기
+  const audioElement = document.getElementById('captchaAudio');
+  
+  // 먼저 이미지 캡차 다시 로드 (세션 초기화)
+  this.refreshCaptcha();
+  
+  // 세션이 서버에 설정될 시간을 주기 위해 지연
+  setTimeout(() => {
+    // 음성 캡차 URL 생성 (이미지와 동일한 세션 사용)
     const timestamp = new Date().getTime();
     const audioUrl = `${apiUrl}/api/captcha1-audio/audio?timestamp=${timestamp}`;
     
-    // 로딩 상태 표시
-    this.isAudioLoading = true;
-    this.captchaError = '';
-    
-    // 오디오 이벤트 리스너 설정
+    // 오디오 이벤트 설정
     audioElement.onloadeddata = () => {
       this.isAudioLoading = false;
     };
@@ -239,16 +257,12 @@ playAudioCaptcha() {
     
     // 오디오 소스 설정 및 재생
     audioElement.src = audioUrl;
+    audioElement.load(); // 명시적으로 로드 요청
     audioElement.play().catch(error => {
       this.captchaError = "음성 재생에 실패했습니다: " + error.message;
       this.isAudioLoading = false;
     });
-  })
-  .catch(error => {
-    console.error('캡차 이미지 로드 실패:', error);
-    this.isAudioLoading = false;
-    this.captchaError = "음성 캡차를 준비하는 중 오류가 발생했습니다.";
-  });
+  }, 1000); // 1초 지연
 },
   // IP 보안 토글
   toggleIpSecurity() {
