@@ -233,13 +233,32 @@ methods:{
   },
   async handleSubmit() {
   try {
+    // 로그 추가 - 요청 시작 정보
+    console.log('로그인 요청 시작:', {
+      url: '/api/auth/login',
+      data: {
+        username: this.loginform.username,
+        password: '******', // 비밀번호는 보안상 마스킹
+        rememberMe: this.loginform.rememberMe,
+        captcha: this.showCaptcha ? this.loginform.captcha : undefined
+      }
+    });
+
     // 유효성 검사 먼저 실행
     const isUsernameValid = this.validateUsername();
     const isPasswordValid = this.validatePassword();
     const isCaptchaValid = !this.showCaptcha || this.validateCaptcha();
 
+    // 로그 추가 - 유효성 검증 결과
+    console.log('유효성 검증 결과:', {
+      username: isUsernameValid,
+      password: isPasswordValid,
+      captcha: isCaptchaValid
+    });
+
     // 하나라도 유효하지 않으면 제출 중단
     if (!isUsernameValid || !isPasswordValid || !isCaptchaValid) {
+      console.log('유효성 검증 실패로 로그인 요청 중단');
       return;
     }
 
@@ -259,6 +278,19 @@ methods:{
       logindata.captcha = this.loginform.captcha;
     }
     
+    // 로그 추가 - 로그인 요청 설정
+    console.log('로그인 요청 설정:', {
+      method: 'POST',
+      url: '/api/auth/login',
+      timeout: 10000,
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      data: { ...logindata, password: '******' } // 비밀번호 마스킹
+    });
+    
     const response = await axios.post('/api/auth/login', logindata, {
         timeout: 10000,
         withCredentials: true,
@@ -267,12 +299,25 @@ methods:{
             'Accept': 'application/json'
         }
     });
+    
+    // 로그 추가 - 로그인 응답
+    console.log('로그인 응답 수신:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data ? {
+        userId: response.data.userId,
+        username: response.data.username,
+        hasToken: !!response.data.token,
+        tokenLength: response.data.token ? response.data.token.length : 0
+      } : null
+    });
 
     if (response.data && response.data.token) {
         localStorage.setItem('userToken', response.data.token);
         this.successMessage = "로그인 성공!";
-        console.log('토큰 저장됨:', response.data.token); // 토큰 저장 확인
-        console.log('localStorage 확인:', localStorage.getItem('userToken')); // 실제로 저장되었는지 확인
+        console.log('토큰 저장됨:', response.data.token.substring(0, 10) + '...'); // 토큰 일부만 표시
+        console.log('localStorage 확인:', localStorage.getItem('userToken').substring(0, 10) + '...'); // 토큰 일부만 표시
+        
         const userData = {
             userId: response.data.userId,
             username: response.data.username,
@@ -280,23 +325,50 @@ methods:{
         };
 
         localStorage.setItem('userData', JSON.stringify(userData));
-        console.log('사용자 데이터 저장됨:', userData); // 사용자 데이터 저장 확인
+        console.log('사용자 데이터 저장됨:', userData);
+        
         // 로그인 성공 시 캡차 초기화
         this.showCaptcha = false;
         this.loginFailCount = 0;
         this.loginform.captcha = '';
 
         // 성공 메시지를 짧게 표시한 후 대시보드로 리다이렉트
+        console.log('1초 후 대시보드로 리다이렉트 예정');
         setTimeout(() => {
-          // 대시보드 페이지로 이동 (URL 직접 변경)
-          // window.location.href = '/dashboard';
+          console.log('대시보드로 리다이렉트 실행');
           this.$router.push('/dashboard');
         }, 1000); // 1초 후 리다이렉트
     } else {
+        console.log('로그인 응답에 토큰이 없음:', response.data);
         this.errormessage = '로그인은 성공했으나 토큰이 없습니다.';
     }
   } catch (error) {
     console.error('로그인 실패', error);
+    
+    // 상세 오류 정보 로깅
+    console.log('로그인 오류 상세 정보:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack ? error.stack.split('\n')[0] : null,
+      config: error.config ? {
+        url: error.config.url,
+        method: error.config.method,
+        headers: error.config.headers,
+        timeout: error.config.timeout,
+      } : null,
+      response: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers,
+      } : null,
+      request: error.request ? {
+        responseURL: error.request.responseURL,
+        status: error.request.status,
+        statusText: error.request.statusText,
+        responseType: error.request.responseType,
+      } : 'No request object'
+    });
     
     // 로그인 실패 시 아이디와 비밀번호 필드 초기화
     this.loginform.username = '';
@@ -304,9 +376,11 @@ methods:{
     
     // 로그인 실패 횟수 증가
     this.loginFailCount++;
+    console.log('로그인 실패 횟수 증가:', this.loginFailCount);
     
     // 3번 이상 실패하면 캡차 표시
     if (this.loginFailCount >= 3) {
+      console.log('로그인 3회 이상 실패로 캡차 표시');
       this.showCaptcha = true;
       this.refreshCaptcha();
     }
@@ -318,6 +392,7 @@ methods:{
       
       // 캡차 오류인 경우 특별 메시지 표시
       if (error.response.data && error.response.data.message && error.response.data.message.includes('캡차')) {
+        console.log('캡차 검증 실패 오류 감지');
         this.captchaError = error.response.data.message;
         this.refreshCaptcha();
       } else {
@@ -329,10 +404,12 @@ methods:{
       this.errormessage = '서버에서 응답이 없습니다. 네트워크 연결을 확인해주세요.';
     } else {
       // 요청 설정 중 에러 발생
+      console.log('요청 설정 중 오류:', error.message);
       this.errormessage = '요청 설정 중 오류가 발생했습니다.';
     }
 
   } finally {
+    console.log('로그인 요청 완료 (성공/실패 여부 관계없이)');
     this.isLoading = false;
   }
 },
