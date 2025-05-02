@@ -13,16 +13,15 @@ const apiClient = axios.create({
     }
 });
 
-// 요청 인터셉터 수정
+// frontend/src/services/api.js에 추가
 apiClient.interceptors.request.use(
   config => {
-    console.log('API 요청:', {
-      method: config.method,
-      url: config.url,
-      baseURL: config.baseURL,
-      headers: config.headers
-    });
+    console.log('요청 URL:', config.baseURL + config.url);
+    console.log('요청 메서드:', config.method.toUpperCase());
+    console.log('요청 헤더:', config.headers);
+    console.log('요청 데이터:', config.data);
     
+    // 원래 있던 토큰 추가 로직
     const token = localStorage.getItem('userToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -30,28 +29,20 @@ apiClient.interceptors.request.use(
     return config;
   },
   error => {
-    console.error('API 요청 오류:', error);
+    console.error('요청 오류:', error);
     return Promise.reject(error);
   }
 );
 
-// 응답 인터셉터 추가
+// 응답 인터셉터도 추가
 apiClient.interceptors.response.use(
   response => {
-    console.log('API 응답 성공:', {
-      status: response.status,
-      statusText: response.statusText,
-      data: response.data
-    });
+    console.log('응답 상태:', response.status);
+    console.log('응답 데이터:', response.data);
     return response;
   },
   error => {
-    console.error('API 응답 오류:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data
-    });
+    console.error('응답 오류:', error.response ? error.response.status : error.message);
     return Promise.reject(error);
   }
 );
