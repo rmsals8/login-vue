@@ -118,6 +118,7 @@
 
 <script>
 import axios from 'axios';
+
 export default {
 name: 'LoginForm',
 mounted() {
@@ -234,8 +235,9 @@ methods:{
   async handleSubmit() {
   try {
     // 로그 추가 - 요청 시작 정보
+    const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
     console.log('로그인 요청 시작:', {
-      url: '/api/auth/login',
+      url: `${apiUrl}/api/auth/login`,
       data: {
         username: this.loginform.username,
         password: '******', // 비밀번호는 보안상 마스킹
@@ -281,7 +283,7 @@ methods:{
     // 로그 추가 - 로그인 요청 설정
     console.log('로그인 요청 설정:', {
       method: 'POST',
-      url: '/api/auth/login',
+      url: `${apiUrl}/api/auth/login`,
       timeout: 10000,
       withCredentials: true,
       headers: {
@@ -291,7 +293,7 @@ methods:{
       data: { ...logindata, password: '******' } // 비밀번호 마스킹
     });
     
-    const response = await axios.post('/api/auth/login', logindata, {
+    const response = await axios.post(`${apiUrl}/api/auth/login`, logindata, {
         timeout: 10000,
         withCredentials: true,
         headers: {
