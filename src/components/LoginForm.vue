@@ -334,12 +334,9 @@ methods:{
         this.loginFailCount = 0;
         this.loginform.captcha = '';
 
-        // 성공 메시지를 짧게 표시한 후 대시보드로 리다이렉트
-        console.log('1초 후 대시보드로 리다이렉트 예정');
-        setTimeout(() => {
-          console.log('대시보드로 리다이렉트 실행');
-          this.$router.push('/dashboard');
-        }, 1000); // 1초 후 리다이렉트
+        // 바로 대시보드로 리다이렉트
+        console.log('대시보드로 즉시 리다이렉트 실행');
+        this.$router.push('/dashboard');
     } else {
         console.log('로그인 응답에 토큰이 없음:', response.data);
         this.errormessage = '로그인은 성공했으나 토큰이 없습니다.';
