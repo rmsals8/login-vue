@@ -212,7 +212,6 @@ methods:{
   });
 },
 
-// 음성 캡차 재생 메서드 수정
 playAudioCaptcha() {
   // 이미 로딩 중이면 중복 재생 방지
   if (this.isAudioLoading) {
@@ -226,84 +225,135 @@ playAudioCaptcha() {
   this.isAudioLoading = true;
   this.captchaError = '';
   
-  // 1. 먼저 이미지 캡차 갱신 (세션 생성/갱신)
-  // 이미지 요청에 withCredentials 옵션을 명시적으로 지정
-  axios.get(`${apiUrl}/api/captcha/image?timestamp=${new Date().getTime()}`, {
-    withCredentials: true,  // 중요: 세션 쿠키를 전송하고 받기 위해 필요
-    responseType: 'blob'
+  // 오디오 요청 시 세션 쿠키만 전송하고 이미지는 갱신하지 않음
+  const timestamp = new Date().getTime();
+  const audioElement = document.getElementById('captchaAudio');
+  
+  // withCredentials 옵션을 포함한 오디오 요청
+  axios.get(`${apiUrl}/api/captcha1-audio/audio?timestamp=${timestamp}`, {
+    responseType: 'text', // 오류 메시지를 텍스트로 받기 위해 변경
+    withCredentials: true,  // 중요: 세션 쿠키를 전송하기 위해 필요
+    headers: {
+      'Accept': 'audio/mpeg, */*'
+    }
   })
   .then(response => {
-    console.log('캡차 이미지 로드 성공');
-    console.log('응답 헤더:', response.headers);
+    console.log('음성 캡차 로드 성공');
     
-    // 이미지 URL 업데이트
-    const imageBlob = new Blob([response.data], { type: 'image/jpeg' });
-    this.captchaImageUrl = URL.createObjectURL(imageBlob);
+    // 응답 데이터가 텍스트인 경우(오류)와 바이너리인 경우 구분
+    try {
+      // 응답이 JSON이면 오류로 처리
+      const jsonData = JSON.parse(response.data);
+      if (jsonData.error || jsonData.message) {
+        throw new Error(jsonData.message || jsonData.error || '음성 캡차 생성 실패');
+      }
+    } catch (e) {
+      // JSON 파싱 실패는 정상 응답일 수 있음
+      if (e.message !== 'Unexpected token � in JSON at position 0') {
+        throw e; // JSON 파싱 실패 외의 오류는 다시 던짐
+      }
+    }
     
-    // 캡차 입력값 초기화
-    this.loginform.captcha = '';
-    
-    // 서버에서 세션이 완전히 처리될 시간을 주기 위해 약간의 지연 추가
-    setTimeout(() => {
-      // 2. 그 다음 오디오 캡차 요청
-      const audioElement = document.getElementById('captchaAudio');
-      const timestamp = new Date().getTime();
+    // 성공적인 응답(바이너리 데이터)인 경우
+    // 응답 헤더가 audio/mpeg인지 확인
+    const contentType = response.headers['content-type'];
+    if (contentType && contentType.includes('audio')) {
+      // Blob URL 생성
+      const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(audioBlob);
       
-      // withCredentials 옵션을 포함한 오디오 요청
-      axios.get(`${apiUrl}/api/captcha1-audio/audio?timestamp=${timestamp}`, {
-        responseType: 'blob',
-        withCredentials: true,  // 중요: 세션 쿠키를 전송하기 위해 필요
-        headers: {
-          'Accept': 'audio/mpeg, */*'
-        }
-      })
-      .then(response => {
-        console.log('음성 캡차 로드 성공');
-        
-        // Blob URL 생성
-        const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        
-        // 오디오 이벤트 리스너 설정
-        audioElement.onloadeddata = () => {
-          this.isAudioLoading = false;
-        };
-        
-        audioElement.onerror = (e) => {
-          console.error('음성 캡차 재생 오류:', e);
-          this.isAudioLoading = false;
-          this.captchaError = "음성 캡차를 재생할 수 없습니다.";
-        };
-        
-        audioElement.onended = () => {
-          this.isAudioLoading = false;
-        };
-        
-        // 오디오 소스 설정 및 재생
-        audioElement.src = audioUrl;
-        audioElement.play()
-          .catch(error => {
-            console.error('음성 재생 실패:', error);
-            this.captchaError = "음성 재생에 실패했습니다: " + error.message;
-            this.isAudioLoading = false;
-          });
-      })
-      .catch(error => {
-        console.error('음성 캡차 요청 실패:', error);
+      // 오디오 이벤트 리스너 설정
+      audioElement.onloadeddata = () => {
         this.isAudioLoading = false;
-        
-        if (error.response) {
-          this.captchaError = `음성 캡차 오류 (${error.response.status}): ${error.response.data ? error.response.data : error.response.statusText}`;
-        } else {
-          this.captchaError = "음성 캡차를 로드할 수 없습니다.";
-        }
-      });
-    }, 3000); // 1초 지연
+      };
+      
+      audioElement.onerror = (e) => {
+        console.error('음성 캡차 재생 오류:', e);
+        this.isAudioLoading = false;
+        this.captchaError = "음성 캡차를 재생할 수 없습니다.";
+      };
+      
+      audioElement.onended = () => {
+        this.isAudioLoading = false;
+      };
+      
+      // 오디오 소스 설정 및 재생
+      audioElement.src = audioUrl;
+      audioElement.play()
+        .catch(error => {
+          console.error('음성 재생 실패:', error);
+          this.captchaError = "음성 재생에 실패했습니다: " + error.message;
+          this.isAudioLoading = false;
+        });
+    } else {
+      // 컨텐츠 타입이 오디오가 아닌 경우
+      throw new Error('서버 응답이 오디오 형식이 아닙니다.');
+    }
   })
   .catch(error => {
-    console.error('캡차 이미지 로드 실패:', error);
+    console.error('음성 캡차 요청 실패:', error);
     this.isAudioLoading = false;
-    this.captchaError = "캡차 이미지를 로드할 수 없습니다.";
+    
+    // 상세한 오류 정보 수집
+    let errorMessage = "음성 캡차를 로드할 수 없습니다.";
+    
+    if (error.response) {
+      console.log('오류 응답 데이터:', error.response.data);
+      console.log('오류 응답 상태:', error.response.status);
+      console.log('오류 응답 헤더:', error.response.headers);
+      
+      // 응답 데이터가 있는 경우
+      if (error.response.data) {
+        if (typeof error.response.data === 'string') {
+          // 문자열 응답
+          try {
+            // JSON 문자열인지 확인
+            const jsonData = JSON.parse(error.response.data);
+            errorMessage = jsonData.message || jsonData.error || `오류 상태: ${error.response.status}`;
+          } catch (e) {
+            // 일반 텍스트인 경우
+            errorMessage = error.response.data.substring(0, 100); // 너무 길면 자름
+          }
+        } else if (error.response.data instanceof Blob) {
+          // Blob 응답인 경우, 텍스트로 변환
+          errorMessage = `오류 상태: ${error.response.status}. 응답 데이터를 확인할 수 없습니다.`;
+          
+          // 비동기 처리로 인해 화면에 즉시 반영되지 않을 수 있음
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const textData = reader.result;
+              try {
+                const jsonData = JSON.parse(textData);
+                this.captchaError = jsonData.message || jsonData.error || errorMessage;
+              } catch (e) {
+                this.captchaError = textData.substring(0, 100) || errorMessage;
+              }
+            } catch (e) {
+              this.captchaError = errorMessage;
+            }
+          };
+          reader.readAsText(error.response.data);
+        } else {
+          // 객체 응답
+          errorMessage = error.response.data.message || error.response.data.error || `오류 상태: ${error.response.status}`;
+        }
+      } else {
+        // 응답 데이터가 없는 경우
+        errorMessage = `오류 상태: ${error.response.status}`;
+      }
+    } else if (error.request) {
+      // 요청은 보냈지만 응답이 없는 경우
+      errorMessage = "서버에서 응답이 없습니다. 네트워크 연결을 확인해주세요.";
+    } else {
+      // 요청 설정 중 오류
+      errorMessage = error.message || "요청 설정 중 오류가 발생했습니다.";
+    }
+    
+    this.captchaError = `음성 캡차 오류: ${errorMessage}`;
+    
+    // 오류 발생 시 세션이 만료되었을 수 있으므로 이미지 캡차 갱신
+    this.refreshCaptcha();
   });
 },
   // IP 보안 토글
