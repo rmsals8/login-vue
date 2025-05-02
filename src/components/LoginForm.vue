@@ -1,123 +1,134 @@
 <template>
-  <header>
-      <h1> 로그인 폼 </h1>
-  </header>
-  
-  <!-- 3번 이상 실패 시 상단 오류 메시지 표시 -->
-  <div v-if="showCaptcha && loginFailCount >= 3" class="top-error-message">
-      아이디(로그인 전화번호, 로그인 전용 아이디), 비밀번호 또는
-      자동입력 방지 문자를 잘못 입력했습니다.
-      입력하신 내용을 다시 확인해주세요.
-  </div>
-  
-  <form @submit.prevent="handleSubmit">
-      <!-- 입력 필드 컨테이너 -->
-      <div class="input-container">
-          <div class="input-group">
-              <!-- 아이디 입력 필드 -->
-              <input 
-                  id="username" 
-                  v-model="loginform.username" 
-                  @input="vaildForm" 
-                  @focus="usernameFocused = true" 
-                  @blur="usernameFocused = false; validateUsername()"
-                  required
-              />
-              <!-- 라벨은 입력 필드 내부에 위치 -->
-              <label for="username" :class="{ 'focused': usernameFocused, 'has-value': loginform.username }">아이디</label>
-          </div>
-          <!-- 구분선 추가 -->
-          <div class="divider"></div>
-          <div class="input-group">
-              <!-- 비밀번호 입력 필드 -->
-              <input 
-                  id="password" 
-                  v-model="loginform.password" 
-                  type="password" 
-                  @input="vaildForm"
-                  @focus="passwordFocused = true" 
-                  @blur="passwordFocused = false; validatePassword()"
-                  required
-              />
-              <!-- 라벨은 입력 필드 내부에 위치 -->
-              <label for="password" :class="{ 'focused': passwordFocused, 'has-value': loginform.password }">비밀번호</label>
-          </div>
-      </div>
+  <div class="login-wrapper">
+    <header>
+        <h1> 로그인 폼 </h1>
+    </header>
+    
+    <!-- 3번 이상 실패 시 상단 오류 메시지 표시 -->
+    <div v-if="showCaptcha && loginFailCount >= 3" class="top-error-message">
+        아이디(로그인 전화번호, 로그인 전용 아이디), 비밀번호 또는
+        자동입력 방지 문자를 잘못 입력했습니다.
+        입력하신 내용을 다시 확인해주세요.
+    </div>
+    
+    <form @submit.prevent="handleSubmit">
+        <!-- 입력 필드 컨테이너 -->
+        <div class="input-container">
+            <div class="input-group">
+                <!-- 아이디 입력 필드 -->
+                <input 
+                    id="username" 
+                    v-model="loginform.username" 
+                    @input="vaildForm" 
+                    @focus="usernameFocused = true" 
+                    @blur="usernameFocused = false; validateUsername()"
+                    required
+                />
+                <!-- 라벨은 입력 필드 내부에 위치 -->
+                <label for="username" :class="{ 'focused': usernameFocused, 'has-value': loginform.username }">아이디</label>
+            </div>
+            <!-- 구분선 추가 -->
+            <div class="divider"></div>
+            <div class="input-group">
+                <!-- 비밀번호 입력 필드 -->
+                <input 
+                    id="password" 
+                    v-model="loginform.password" 
+                    type="password" 
+                    @input="vaildForm"
+                    @focus="passwordFocused = true" 
+                    @blur="passwordFocused = false; validatePassword()"
+                    required
+                />
+                <!-- 라벨은 입력 필드 내부에 위치 -->
+                <label for="password" :class="{ 'focused': passwordFocused, 'has-value': loginform.password }">비밀번호</label>
+            </div>
+        </div>
 
-      <!-- 로그인 유지 체크박스 -->
-      <div class="login-options">
-        <div class="remember-login">
-          <input type="checkbox" id="login-maintain" v-model="loginform.rememberMe">
-          <label for="login-maintain" class="checkbox-label">로그인 상태 유지</label>
+        <!-- 로그인 유지 체크박스 -->
+        <div class="login-options">
+          <div class="remember-login">
+            <input type="checkbox" id="login-maintain" v-model="loginform.rememberMe">
+            <label for="login-maintain" class="checkbox-label">로그인 상태 유지</label>
+          </div>
+          <div class="ip-security">
+            IP보안 <span class="toggle-switch" :class="{ 'on': ipSecurity }" @click="toggleIpSecurity">{{ ipSecurity ? 'ON' : 'OFF' }}</span>
+          </div>
         </div>
-        <div class="ip-security">
-          IP보안 <span class="toggle-switch" :class="{ 'on': ipSecurity }" @click="toggleIpSecurity">{{ ipSecurity ? 'ON' : 'OFF' }}</span>
+        
+        <!-- 캡차 영역 추가 (별도 컨테이너로 분리) -->
+        <div v-if="showCaptcha" class="captcha-wrapper">
+            <div class="captcha-content">
+                <!-- 캡차 이미지 영역 -->
+                <div class="captcha-image-container">
+                    <img :src="captchaImageUrl" alt="Captcha 이미지" class="captcha-image" />
+                </div>
+            </div>
+            
+            <!-- 캡차 입력 필드 영역 -->
+            <div class="captcha-input-container">
+                <div class="captcha-input-group">
+                    <input 
+                        type="text" 
+                        v-model="loginform.captcha" 
+                        @input="vaildForm" 
+                        placeholder="정답을 입력해주세요."
+                        class="captcha-input"
+                    />
+                    <div class="captcha-buttons">
+                        <button type="button" @click="refreshCaptcha" class="captcha-button" aria-label="새로고침">
+                            <span class="refresh-icon">↻</span>
+                        </button>
+                        <button type="button" @click="playAudioCaptcha" class="captcha-button" aria-label="음성으로 듣기" :disabled="isAudioLoading">
+                            <span class="audio-icon" :class="{ 'loading': isAudioLoading }">♪</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="captcha-info">위 문자를 입력해 주세요</div>
         </div>
-      </div>
-      
-      <!-- 캡차 영역 추가 (별도 컨테이너로 분리) -->
-      <div v-if="showCaptcha" class="captcha-wrapper">
-          <div class="captcha-content">
-              <!-- 캡차 이미지 영역 -->
-              <div class="captcha-image-container">
-                  <img :src="captchaImageUrl" alt="Captcha 이미지" class="captcha-image" />
-              </div>
-          </div>
-          
-          <!-- 캡차 입력 필드 영역 -->
-          <div class="captcha-input-container">
-              <div class="captcha-input-group">
-                  <input 
-                      type="text" 
-                      v-model="loginform.captcha" 
-                      @input="vaildForm" 
-                      placeholder="정답을 입력해주세요."
-                      class="captcha-input"
-                  />
-                  <div class="captcha-buttons">
-                      <button type="button" @click="refreshCaptcha" class="captcha-button" aria-label="새로고침">
-                          <span class="refresh-icon">↻</span>
-                      </button>
-                      <button type="button" @click="playAudioCaptcha" class="captcha-button" aria-label="음성으로 듣기" :disabled="isAudioLoading">
-                          <span class="audio-icon" :class="{ 'loading': isAudioLoading }">♪</span>
-                      </button>
-                  </div>
-              </div>
-          </div>
-          
-          <div class="captcha-info">위 문자를 입력해 주세요</div>
-      </div>
-  
-      <button type="submit" :class="{'active': isFormVaild && !isLoading}"
-      > {{ isLoading ? '로그인 중...' :'로그인' }}</button>
-      
-      <!-- 오류 메시지 표시 영역 -->
-      <div v-if="usernameError" class="error-message">{{ usernameError }}</div>
-      <div v-else-if="passwordError" class="error-message">{{ passwordError }}</div>
-      <div v-else-if="captchaError" class="error-message">{{ captchaError }}</div>
-      <div v-else-if="errormessage" class="error-message">{{ errormessage }}</div>
-      <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
-      
-      <!-- 소셜 로그인 버튼 영역 -->
-      <div class="social-login-section">
-          <div class="divider-with-text">
-              <span>또는</span>
-          </div>
-          <div class="social-login-buttons">
-              <button type="button" @click="kakaoLogin" class="kakao-login-btn">
-                <img src="../assets/kakao_login_large_wide.png" alt="카카오 로그인" />
-              </button>
-          </div>
-      </div>
-  </form>
-  <!-- 음성 캡차 오디오 엘리먼트 (숨김) -->
-  <audio id="captchaAudio" style="display: none;"></audio>
+    
+        <button type="submit" :class="{'active': isFormVaild && !isLoading}"
+        > {{ isLoading ? '로그인 중...' :'로그인' }}</button>
+        
+        <!-- 오류 메시지 표시 영역 -->
+        <div v-if="usernameError" class="error-message">{{ usernameError }}</div>
+        <div v-else-if="passwordError" class="error-message">{{ passwordError }}</div>
+        <div v-else-if="captchaError" class="error-message">{{ captchaError }}</div>
+        <div v-else-if="errormessage" class="error-message">{{ errormessage }}</div>
+        <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
+        
+        <!-- 소셜 로그인 버튼 영역 -->
+        <div class="social-login-section">
+            <div class="divider-with-text">
+                <span>또는</span>
+            </div>
+            <div class="social-login-buttons">
+                <button type="button" @click="kakaoLogin" class="kakao-login-btn">
+                  <img src="../assets/kakao_login_large_wide.png" alt="카카오 로그인" />
+                </button>
+            </div>
+        </div>
+      </form>
+      <audio id="captchaAudio" style="display: none;"></audio>
+    <!-- 음성 캡차 오디오 엘리먼트 (숨김) -->
+  </div>
 </template>
 
 <script>
 import axios from 'axios';
 export default {
 name: 'LoginForm',
+mounted() {
+  // URL 파라미터에서 오류 확인
+  const urlParams = new URLSearchParams(window.location.search);
+  const error = urlParams.get('error');
+  
+  if (error === 'kakao_login_failed') {
+    this.errormessage = '카카오 로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.';
+  }
+},
 data() {
   return {
       loginform:{
@@ -221,101 +232,110 @@ methods:{
     this.ipSecurity = !this.ipSecurity;
   },
   async handleSubmit() {
-    try {
-      // 유효성 검사 먼저 실행
-      const isUsernameValid = this.validateUsername();
-      const isPasswordValid = this.validatePassword();
-      const isCaptchaValid = !this.showCaptcha || this.validateCaptcha();
+  try {
+    // 유효성 검사 먼저 실행
+    const isUsernameValid = this.validateUsername();
+    const isPasswordValid = this.validatePassword();
+    const isCaptchaValid = !this.showCaptcha || this.validateCaptcha();
 
-      // 하나라도 유효하지 않으면 제출 중단
-      if (!isUsernameValid || !isPasswordValid || !isCaptchaValid) {
-        return;
-      }
-
-      this.isLoading = true;
-      this.errormessage = '';
-      this.successMessage = '';
-      this.captchaError = '';
-
-      const logindata = {
-          username: this.loginform.username,
-          password: this.loginform.password,
-          rememberMe: this.loginform.rememberMe // 로그인 유지 옵션 추가
-      };
-      
-      // 캡차가 표시되어 있으면 캡차 값 추가
-      if (this.showCaptcha) {
-        logindata.captcha = this.loginform.captcha;
-      }
-      
-      const response = await axios.post('/api/auth/login', logindata, {
-          timeout: 10000,
-          withCredentials: true,
-          headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-          }
-      });
-
-      if (response.data && response.data.token) {
-          localStorage.setItem('userToken', response.data.token);
-          this.successMessage = "로그인 성공!";
-
-          const userData = {
-              userId: response.data.userId,
-              username: response.data.username
-          };
-
-          localStorage.setItem('userData', JSON.stringify(userData));
-          
-          // 로그인 성공 시 캡차 초기화
-          this.showCaptcha = false;
-          this.loginFailCount = 0;
-          this.loginform.captcha = '';
-      } else {
-          this.errormessage = '로그인은 성공했으나 토큰이 없습니다.';
-      }
-    } catch (error) {
-      console.error('로그인 실패', error);
-      
-      // 로그인 실패 시 아이디와 비밀번호 필드 초기화
-      this.loginform.username = '';
-      this.loginform.password = '';
-      
-      // 로그인 실패 횟수 증가
-      this.loginFailCount++;
-      
-      // 3번 이상 실패하면 캡차 표시
-      if (this.loginFailCount >= 3) {
-        this.showCaptcha = true;
-        this.refreshCaptcha();
-      }
-
-      if (error.response) {
-        // 서버가 응답을 반환했지만 2xx 범위를 벗어나는 상태 코드
-        console.log('에러 응답:', error.response.data);
-        console.log('에러 상태:', error.response.status);
-        
-        // 캡차 오류인 경우 특별 메시지 표시
-        if (error.response.data && error.response.data.message && error.response.data.message.includes('캡차')) {
-          this.captchaError = error.response.data.message;
-          this.refreshCaptcha();
-        } else {
-          this.errormessage = `오류 발생 (${error.response.status}): ${error.response.data.message || '로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.'}`;
-        }
-      } else if (error.request) {
-        // 요청은 보냈지만 응답을 받지 못함
-        console.log('요청은 되었으나 응답 없음:', error.request);
-        this.errormessage = '서버에서 응답이 없습니다. 네트워크 연결을 확인해주세요.';
-      } else {
-        // 요청 설정 중 에러 발생
-        this.errormessage = '요청 설정 중 오류가 발생했습니다.';
-      }
-
-    } finally {
-      this.isLoading = false;
+    // 하나라도 유효하지 않으면 제출 중단
+    if (!isUsernameValid || !isPasswordValid || !isCaptchaValid) {
+      return;
     }
-  },
+
+    this.isLoading = true;
+    this.errormessage = '';
+    this.successMessage = '';
+    this.captchaError = '';
+
+    const logindata = {
+        username: this.loginform.username,
+        password: this.loginform.password,
+        rememberMe: this.loginform.rememberMe // 로그인 유지 옵션 추가
+    };
+    
+    // 캡차가 표시되어 있으면 캡차 값 추가
+    if (this.showCaptcha) {
+      logindata.captcha = this.loginform.captcha;
+    }
+    
+    const response = await axios.post('/api/auth/login', logindata, {
+        timeout: 10000,
+        withCredentials: true,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    });
+
+    if (response.data && response.data.token) {
+        localStorage.setItem('userToken', response.data.token);
+        this.successMessage = "로그인 성공!";
+        console.log('토큰 저장됨:', response.data.token); // 토큰 저장 확인
+        console.log('localStorage 확인:', localStorage.getItem('userToken')); // 실제로 저장되었는지 확인
+        const userData = {
+            userId: response.data.userId,
+            username: response.data.username,
+            loginType: 'normal' // 일반 로그인 타입 추가
+        };
+
+        localStorage.setItem('userData', JSON.stringify(userData));
+        console.log('사용자 데이터 저장됨:', userData); // 사용자 데이터 저장 확인
+        // 로그인 성공 시 캡차 초기화
+        this.showCaptcha = false;
+        this.loginFailCount = 0;
+        this.loginform.captcha = '';
+
+        // 성공 메시지를 짧게 표시한 후 대시보드로 리다이렉트
+        setTimeout(() => {
+          // 대시보드 페이지로 이동 (URL 직접 변경)
+          // window.location.href = '/dashboard';
+          this.$router.push('/dashboard');
+        }, 1000); // 1초 후 리다이렉트
+    } else {
+        this.errormessage = '로그인은 성공했으나 토큰이 없습니다.';
+    }
+  } catch (error) {
+    console.error('로그인 실패', error);
+    
+    // 로그인 실패 시 아이디와 비밀번호 필드 초기화
+    this.loginform.username = '';
+    this.loginform.password = '';
+    
+    // 로그인 실패 횟수 증가
+    this.loginFailCount++;
+    
+    // 3번 이상 실패하면 캡차 표시
+    if (this.loginFailCount >= 3) {
+      this.showCaptcha = true;
+      this.refreshCaptcha();
+    }
+
+    if (error.response) {
+      // 서버가 응답을 반환했지만 2xx 범위를 벗어나는 상태 코드
+      console.log('에러 응답:', error.response.data);
+      console.log('에러 상태:', error.response.status);
+      
+      // 캡차 오류인 경우 특별 메시지 표시
+      if (error.response.data && error.response.data.message && error.response.data.message.includes('캡차')) {
+        this.captchaError = error.response.data.message;
+        this.refreshCaptcha();
+      } else {
+        this.errormessage = `오류 발생 (${error.response.status}): ${error.response.data.message || '로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.'}`;
+      }
+    } else if (error.request) {
+      // 요청은 보냈지만 응답을 받지 못함
+      console.log('요청은 되었으나 응답 없음:', error.request);
+      this.errormessage = '서버에서 응답이 없습니다. 네트워크 연결을 확인해주세요.';
+    } else {
+      // 요청 설정 중 에러 발생
+      this.errormessage = '요청 설정 중 오류가 발생했습니다.';
+    }
+
+  } finally {
+    this.isLoading = false;
+  }
+},
   vaildForm() {
     // 기본 유효성 검사
     let isValid = !!this.loginform.username && !!this.loginform.password;
@@ -335,16 +355,16 @@ methods:{
     }
   },
   kakaoLogin() {
-    this.isLoading = true;
-    this.errormessage = '';
-    this.successMessage = '';
-    
-    // 로그인 유지 옵션을 URL 파라미터로 전달
-    const url = `/api/auth/kakao/login?remember_me=${this.loginform.rememberMe}`;
-    
-    // 카카오 로그인 API로 리다이렉트
-    window.location.href = url;
-  }
+  this.isLoading = true;
+  this.errormessage = '';
+  this.successMessage = '';
+  
+  // 로그인 유지 옵션을 URL 파라미터로 전달
+  const url = `/api/auth/kakao/login?remember_me=${this.loginform.rememberMe}`;
+  
+  // 카카오 로그인 API로 리다이렉트
+  window.location.href = url;
+}
 }
 }
 </script>

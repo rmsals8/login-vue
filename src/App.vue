@@ -2,11 +2,12 @@
   <div id="app">
     <!-- 앱 헤더 추가 -->
     <header>
-      <h1>Vue.js - 클라우드타입 배포 테스트</h1>
+      <h1>Vue.js - 그냥 배포 테스트</h1>
     </header>
-    
-    <!-- 로그인 컴포넌트 렌더링 -->
-    <Login/>
+       
+        <router-view />
+      
+  
     
     <!-- 앱 푸터 수정 -->
     <footer>
@@ -18,7 +19,7 @@
 
 <script>
 // 로그인 컴포넌트 가져오기
-import Login from './components/LoginForm.vue'
+ 
 
 export default {
   // 앱 이름
@@ -26,7 +27,7 @@ export default {
   
   // 컴포넌트 등록
   components: {
-    Login
+  
   },
   
   // 컴포넌트 데이터
@@ -35,6 +36,47 @@ export default {
       // 현재 환경 정보 (NODE_ENV 환경 변수에서 가져옴)
       currentEnv: process.env.NODE_ENV,
       deployTime: new Date().toLocaleString()
+    }
+  },
+  
+  // 컴포넌트가 생성될 때 실행
+  created() {
+    // 카카오 로그인 리다이렉트 감지 및 처리
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const loginType = urlParams.get('loginType');
+    
+    // 카카오 로그인 리다이렉트로 판단되는 경우
+    if (token && loginType === 'kakao') {
+      console.log('카카오 로그인 리다이렉트 감지 (App.vue)');
+      
+      // 필요한 정보 저장 후 대시보드로 리다이렉트
+      const userId = urlParams.get('userId');
+      const encodedUsername = urlParams.get('username');
+      
+      // 사용자명 디코딩
+      let username = '';
+      try {
+        if (encodedUsername) {
+          username = decodeURIComponent(encodedUsername);
+        }
+      } catch (e) {
+        console.error('사용자명 디코딩 오류:', e);
+        username = encodedUsername || '';
+      }
+      
+      // 정보 저장
+      localStorage.setItem('userToken', token);
+      localStorage.setItem('userData', JSON.stringify({
+        userId: userId,
+        username: username,
+        loginType: 'kakao'
+      }));
+      
+      console.log('카카오 로그인 정보 저장 완료, 대시보드로 이동합니다.');
+      
+      // 쿼리스트링 없이 대시보드로 리다이렉트
+      this.$router.replace('/dashboard');
     }
   }
 }
