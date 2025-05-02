@@ -234,6 +234,7 @@ playAudioCaptcha() {
   })
   .then(response => {
     console.log('캡차 이미지 로드 성공');
+    console.log('응답 헤더:', response.headers);
     
     // 이미지 URL 업데이트
     const imageBlob = new Blob([response.data], { type: 'image/jpeg' });
@@ -297,7 +298,7 @@ playAudioCaptcha() {
           this.captchaError = "음성 캡차를 로드할 수 없습니다.";
         }
       });
-    }, 1000); // 1초 지연
+    }, 3000); // 1초 지연
   })
   .catch(error => {
     console.error('캡차 이미지 로드 실패:', error);
