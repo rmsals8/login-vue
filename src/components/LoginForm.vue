@@ -438,8 +438,13 @@ methods:{
   this.errormessage = '';
   this.successMessage = '';
   
+  // API URL 설정
+  const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
+  
   // 로그인 유지 옵션을 URL 파라미터로 전달
-  const url = `/api/auth/kakao/login?remember_me=${this.loginform.rememberMe}`;
+  const url = `${apiUrl}/api/auth/kakao/login?remember_me=${this.loginform.rememberMe}`;
+  
+  console.log('카카오 로그인 리다이렉트:', url);
   
   // 카카오 로그인 API로 리다이렉트
   window.location.href = url;
