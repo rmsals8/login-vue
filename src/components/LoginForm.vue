@@ -129,6 +129,9 @@ mounted() {
   if (error === 'kakao_login_failed') {
     this.errormessage = '카카오 로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.';
   }
+
+  const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
+  this.captchaImageUrl = `${apiUrl}/api/captcha/image`;
 },
 data() {
   return {
@@ -148,7 +151,7 @@ data() {
       usernameFocused: false, // 아이디 필드 포커스 상태 추적
       passwordFocused: false, // 비밀번호 필드 포커스 상태 추적
       showCaptcha: false, // 기본값은 false로 설정 (로그인 실패 시에만 표시)
-      captchaImageUrl: '/api/captcha/image', // 캡차 이미지 URL
+      captchaImageUrl: '', // 캡차 이미지 URL
       loginFailCount: 0, // 로그인 실패 횟수
       ipSecurity: false, // IP 보안 상태
       isAudioLoading: false, // 음성 캡차 로딩 상태
@@ -185,49 +188,52 @@ methods:{
   },
   // 캡차 새로고침 메서드
   refreshCaptcha() {
-    // 캡차 이미지 갱신을 위해 타임스탬프 추가
-    this.captchaImageUrl = `/api/captcha/image?timestamp=${new Date().getTime()}`;
-    this.loginform.captcha = ''; // 캡차 입력값 초기화
-  },
-  // 음성 캡차 재생 메서드
-  playAudioCaptcha() {
-    // 이미 로딩 중이면 중복 재생 방지
-    if (this.isAudioLoading) {
-      return;
-    }
-    
-    // 오디오 요소 가져오기
-    const audioElement = document.getElementById('captchaAudio');
-    
-    // 타임스탬프를 추가하여 캐싱 방지
-    const timestamp = new Date().getTime();
-    const audioUrl = `/api/captcha1-audio/audio?timestamp=${timestamp}`;
-    
-    // 로딩 상태 표시
-    this.isAudioLoading = true;
-    this.captchaError = '';
-    
-    // 오디오 이벤트 리스너 설정
-    audioElement.onloadeddata = () => {
-      this.isAudioLoading = false;
-    };
-    
-    audioElement.onerror = () => {
-      this.isAudioLoading = false;
-      this.captchaError = "음성 캡차를 로드할 수 없습니다.";
-    };
-    
-    audioElement.onended = () => {
-      this.isAudioLoading = false;
-    };
-    
-    // 오디오 소스 설정 및 재생
-    audioElement.src = audioUrl;
-    audioElement.play().catch(error => {
-      this.captchaError = "음성 재생에 실패했습니다: " + error.message;
-      this.isAudioLoading = false;
-    });
-  },
+  const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
+  // 캡차 이미지 갱신을 위해 타임스탬프 추가
+  this.captchaImageUrl = `${apiUrl}/api/captcha/image?timestamp=${new Date().getTime()}`;
+  this.loginform.captcha = ''; // 캡차 입력값 초기화
+},
+playAudioCaptcha() {
+  // 이미 로딩 중이면 중복 재생 방지
+  if (this.isAudioLoading) {
+    return;
+  }
+  
+  // API URL 설정
+  const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
+  
+  // 오디오 요소 가져오기
+  const audioElement = document.getElementById('captchaAudio');
+  
+  // 타임스탬프를 추가하여 캐싱 방지
+  const timestamp = new Date().getTime();
+  const audioUrl = `${apiUrl}/api/captcha-audio/audio?timestamp=${timestamp}`;
+  
+  // 로딩 상태 표시
+  this.isAudioLoading = true;
+  this.captchaError = '';
+  
+  // 오디오 이벤트 리스너 설정
+  audioElement.onloadeddata = () => {
+    this.isAudioLoading = false;
+  };
+  
+  audioElement.onerror = () => {
+    this.isAudioLoading = false;
+    this.captchaError = "음성 캡차를 로드할 수 없습니다.";
+  };
+  
+  audioElement.onended = () => {
+    this.isAudioLoading = false;
+  };
+  
+  // 오디오 소스 설정 및 재생
+  audioElement.src = audioUrl;
+  audioElement.play().catch(error => {
+    this.captchaError = "음성 재생에 실패했습니다: " + error.message;
+    this.isAudioLoading = false;
+  });
+},
   // IP 보안 토글
   toggleIpSecurity() {
     this.ipSecurity = !this.ipSecurity;
