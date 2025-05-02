@@ -33,7 +33,7 @@
   
   <script>
   export default {
-    name: 'DashboardView',
+    name: 'Dashboard',
     data() {
       return {
         username: '사용자',
