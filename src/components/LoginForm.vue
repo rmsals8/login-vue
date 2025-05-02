@@ -207,7 +207,7 @@ playAudioCaptcha() {
   
   // 타임스탬프를 추가하여 캐싱 방지
   const timestamp = new Date().getTime();
-  const audioUrl = `${apiUrl}/api/captcha-audio/audio?timestamp=${timestamp}`;
+  const audioUrl = `${apiUrl}/api/captcha1-audio/audio?timestamp=${timestamp}`;
   
   // 로딩 상태 표시
   this.isAudioLoading = true;
