@@ -229,24 +229,32 @@ playAudioCaptcha() {
   this.isAudioLoading = true;
   this.captchaError = '';
   
-  // 1. 먼저 이미지 캡차 갱신 (이미지는 변경되지만 세션을 확보하기 위한 필수 단계)
+  // 1. 먼저 이미지 캡차 갱신 (세션 생성/갱신)
+  // 이미지 요청에 withCredentials 옵션을 명시적으로 지정
   axios.get(`${apiUrl}/api/captcha/image?timestamp=${new Date().getTime()}`, {
-    withCredentials: true,
+    withCredentials: true,  // 중요: 세션 쿠키를 전송하고 받기 위해 필요
     responseType: 'blob'
   })
   .then(response => {
     console.log('캡차 이미지 로드 성공');
     
-    // 캡차 이미지는 업데이트하지 않고 원래 이미지 유지 (UI 변경 방지)
-    // 세션에만 새 캡차 텍스트가 저장됩니다
+    // 이미지 URL 업데이트
+    const imageBlob = new Blob([response.data], { type: 'image/jpeg' });
+    this.captchaImageUrl = URL.createObjectURL(imageBlob);
     
-    // 2. 이미지 요청 성공 후 4초 지연 후 오디오 요청
+    // 캡차 입력값 초기화
+    this.loginform.captcha = '';
+    
+    // 서버에서 세션이 완전히 처리될 시간을 주기 위해 약간의 지연 추가
     setTimeout(() => {
+      // 2. 그 다음 오디오 캡차 요청
       const audioElement = document.getElementById('captchaAudio');
+      const timestamp = new Date().getTime();
       
-      axios.get(`${apiUrl}/api/captcha1-audio/audio?timestamp=${new Date().getTime()}`, {
+      // withCredentials 옵션을 포함한 오디오 요청
+      axios.get(`${apiUrl}/api/captcha1-audio/audio?timestamp=${timestamp}`, {
         responseType: 'blob',
-        withCredentials: true,
+        withCredentials: true,  // 중요: 세션 쿠키를 전송하기 위해 필요
         headers: {
           'Accept': 'audio/mpeg, */*'
         }
@@ -287,36 +295,17 @@ playAudioCaptcha() {
         this.isAudioLoading = false;
         
         if (error.response) {
-          // 오류 응답이 있는 경우
-          try {
-            // 오류 메시지 추출 시도
-            if (error.response.data instanceof Blob) {
-              const reader = new FileReader();
-              reader.onload = () => {
-                try {
-                  const text = reader.result;
-                  this.captchaError = `음성 캡차 오류: ${text}`;
-                } catch (e) {
-                  this.captchaError = `음성 캡차 오류 (${error.response.status})`;
-                }
-              };
-              reader.readAsText(error.response.data);
-            } else {
-              this.captchaError = `음성 캡차 오류: ${error.response.data || error.response.statusText}`;
-            }
-          } catch (e) {
-            this.captchaError = `음성 캡차 오류 (${error.response.status})`;
-          }
+          this.captchaError = `음성 캡차 오류 (${error.response.status}): ${error.response.data ? error.response.data : error.response.statusText}`;
         } else {
           this.captchaError = "음성 캡차를 로드할 수 없습니다.";
         }
       });
-    }, 4000); // 4초 지연 (서버 처리 시간 충분히 확보)
+    }, 1000); // 1초 지연
   })
   .catch(error => {
     console.error('캡차 이미지 로드 실패:', error);
     this.isAudioLoading = false;
-    this.captchaError = "캡차 서비스에 연결할 수 없습니다.";
+    this.captchaError = "캡차 이미지를 로드할 수 없습니다.";
   });
 },
   // IP 보안 토글
