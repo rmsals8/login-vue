@@ -131,7 +131,7 @@ mounted() {
   }
 
   const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
-  this.captchaImageUrl = `${apiUrl}/api/captcha/image`;
+  this.refreshCaptcha();
 },
 data() {
   return {
@@ -152,7 +152,7 @@ data() {
       passwordFocused: false, // 비밀번호 필드 포커스 상태 추적
       showCaptcha: false, // 기본값은 false로 설정 (로그인 실패 시에만 표시)
       captchaImageUrl: '', // 캡차 이미지 URL
-      captchaSessionId: '',
+     
       loginFailCount: 0, // 로그인 실패 횟수
       ipSecurity: false, // IP 보안 상태
       isAudioLoading: false, // 음성 캡차 로딩 상태
@@ -188,39 +188,15 @@ methods:{
     }
   },
   // 캡차 새로고침 메서드
-// refreshCaptcha() 메소드 수정 - 실제 이미지를 요청하도록 변경
+// 캡차 새로고침 메서드
 refreshCaptcha() {
   const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
-  const timestamp = new Date().getTime();
-  
-  // 명시적으로 캡차 이미지를 먼저 요청 (세션 초기화 용도)
-  axios.get(`${apiUrl}/api/captcha/image?timestamp=${timestamp}`, {
-    responseType: 'blob',
-    withCredentials: true
-  })
-  .then(response => {
-    // 응답 헤더에서 세션 ID 확인 (쿠키 가져오기)
-    const cookies = document.cookie.split(';');
-    console.log('현재 쿠키:', cookies);
-    
-    // 응답 본문을 Blob URL로 변환
-    const blob = new Blob([response.data], { type: 'image/jpeg' });
-    this.captchaImageUrl = URL.createObjectURL(blob);
-    console.log('캡차 이미지 로드 성공');
-    
-    // 캡차 입력값 초기화
-    this.loginform.captcha = '';
-  })
-  .catch(error => {
-    console.error('캡차 이미지 로드 실패:', error);
-    this.captchaError = "캡차 이미지를 로드할 수 없습니다.";
-  })
-  .finally(() => {
-    this.isLoading = false;
-  });
+  // 캡차 이미지 갱신을 위해 타임스탬프 추가
+  this.captchaImageUrl = `${apiUrl}/api/captcha/image?timestamp=${new Date().getTime()}`;
+  this.loginform.captcha = ''; // 캡차 입력값 초기화
 },
 
-// 음성 캡차 재생 함수 수정
+// 음성 캡차 재생 메서드
 playAudioCaptcha() {
   // 이미 로딩 중이면 중복 재생 방지
   if (this.isAudioLoading) {
@@ -230,83 +206,37 @@ playAudioCaptcha() {
   // API URL 설정
   const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
   
-  // 항상 이미지 캡차를 먼저 로드하여 세션 생성
-  this.refreshCaptcha();
+  // 오디오 요소 가져오기
+  const audioElement = document.getElementById('captchaAudio');
   
-  // 이미지 로드 후 약간의 지연을 두고 음성 요청 (세션이 생성될 시간 부여)
-  setTimeout(() => {
-    // 로딩 상태 표시
-    this.isAudioLoading = true;
-    this.captchaError = '';
-    
-    // 타임스탬프를 추가하여 캐싱 방지
-    const timestamp = new Date().getTime();
-    
-    console.log('음성 캡차 요청 준비 (쿠키 전송)');
-    console.log('현재 쿠키:', document.cookie);
-    
-    // Axios를 사용하여 음성 캡차 요청
-    axios({
-      method: 'GET',
-      url: `${apiUrl}/api/captcha1-audio/audio?timestamp=${timestamp}`,
-      responseType: 'blob',
-      withCredentials: true, // 세션 쿠키 전송을 위해 중요
-      headers: {
-        'Accept': 'audio/mpeg',
-        'Cache-Control': 'no-cache'
-      }
-    })
-    .then(response => {
-      // 오디오 요소 가져오기
-      const audioElement = document.getElementById('captchaAudio');
-      
-      // Blob URL 생성
-      const blob = new Blob([response.data], { type: 'audio/mpeg' });
-      const audioObjectUrl = URL.createObjectURL(blob);
-      
-      console.log('음성 캡차 로드 성공');
-      
-      // 오디오 이벤트 리스너 설정
-      audioElement.onloadeddata = () => {
-        console.log('음성 캡차 재생 준비 완료');
-        this.isAudioLoading = false;
-      };
-      
-      audioElement.onerror = (e) => {
-        console.error('음성 캡차 재생 오류:', e);
-        this.isAudioLoading = false;
-        this.captchaError = "음성 캡차를 재생할 수 없습니다.";
-      };
-      
-      audioElement.onended = () => {
-        console.log('음성 캡차 재생 완료');
-        this.isAudioLoading = false;
-      };
-      
-      // 오디오 소스 설정 및 재생
-      audioElement.src = audioObjectUrl;
-      audioElement.play()
-        .then(() => console.log('음성 캡차 재생 시작'))
-        .catch(error => {
-          console.error('음성 재생 실패:', error);
-          this.captchaError = "음성 재생에 실패했습니다: " + error.message;
-          this.isAudioLoading = false;
-        });
-    })
-    .catch(error => {
-      console.error('음성 캡차 로드 실패:', error);
-      this.isAudioLoading = false;
-      
-      // 에러 상세 정보 출력
-      if (error.response) {
-        console.log('에러 상태:', error.response.status);
-        console.log('에러 데이터:', error.response.data);
-        this.captchaError = `음성 캡차 로드 실패 (${error.response.status}): ${error.response.statusText}`;
-      } else {
-        this.captchaError = "음성 캡차를 로드할 수 없습니다. 잠시 후 다시 시도해주세요.";
-      }
-    });
-  }, 1000); // 1초 지연
+  // 타임스탬프를 추가하여 캐싱 방지
+  const timestamp = new Date().getTime();
+  const audioUrl = `${apiUrl}/api/captcha1-audio/audio?timestamp=${timestamp}`;
+  
+  // 로딩 상태 표시
+  this.isAudioLoading = true;
+  this.captchaError = '';
+  
+  // 오디오 이벤트 리스너 설정
+  audioElement.onloadeddata = () => {
+    this.isAudioLoading = false;
+  };
+  
+  audioElement.onerror = () => {
+    this.isAudioLoading = false;
+    this.captchaError = "음성 캡차를 로드할 수 없습니다.";
+  };
+  
+  audioElement.onended = () => {
+    this.isAudioLoading = false;
+  };
+  
+  // 오디오 소스 설정 및 재생
+  audioElement.src = audioUrl;
+  audioElement.play().catch(error => {
+    this.captchaError = "음성 재생에 실패했습니다: " + error.message;
+    this.isAudioLoading = false;
+  });
 },
   // IP 보안 토글
   toggleIpSecurity() {
