@@ -3,6 +3,7 @@
     <!-- 앱 헤더 추가 -->
     <header>
       <h1>Vue.js - 그냥 배포 테스트</h1>
+      <p class="api-info">API URL: {{ apiUrl }}</p>
     </header>
        
         <router-view />
@@ -35,7 +36,9 @@ export default {
     return {
       // 현재 환경 정보 (NODE_ENV 환경 변수에서 가져옴)
       currentEnv: process.env.NODE_ENV,
-      deployTime: new Date().toLocaleString()
+      deployTime: new Date().toLocaleString(),
+       apiUrl:  process.env.VUE_APP_API_URL
+      
     }
   },
   
