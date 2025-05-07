@@ -189,30 +189,33 @@ methods:{
   },
   // 캡차 새로고침 메서드
  
-refreshCaptcha() {
+  refreshCaptcha() {
   const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
   
-  // 이미지 요청을 XHR로 직접 수행하여 완료 확인
-  const xhr = new XMLHttpRequest();
-  xhr.open('GET', `${apiUrl}/api/captcha/image?timestamp=${new Date().getTime()}`, true);
-  xhr.withCredentials = true; // 중요: 쿠키 전송 활성화
+  console.log('캡차 새로고침 시도 - 시간:', new Date().toISOString());
   
-  xhr.onload = () => {
-    if (xhr.status === 200) {
-      // 이미지 데이터를 Blob URL로 변환
-      const blob = new Blob([xhr.response], { type: 'image/jpeg' });
-      this.captchaImageUrl = URL.createObjectURL(blob);
-      console.log('캡차 이미지 로드 성공');
-    } else {
-      console.error('캡차 이미지 로드 실패:', xhr.status);
+  // axios를 사용하여 일관된 요청 방식 사용
+  axios.get(`${apiUrl}/api/captcha/image?timestamp=${new Date().getTime()}`, {
+    responseType: 'blob',
+    withCredentials: true, // 중요: 세션 쿠키 전송 활성화
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate'
     }
+  })
+  .then(response => {
+    console.log('캡차 이미지 로드 성공');
+    const blob = new Blob([response.data], { type: 'image/jpeg' });
+    this.captchaImageUrl = URL.createObjectURL(blob);
     
     // 캡차 입력값 초기화
     this.loginform.captcha = '';
-  };
-  
-  xhr.responseType = 'blob';
-  xhr.send();
+    
+    // 쿠키 확인 (디버깅용)
+    console.log('현재 쿠키:', document.cookie);
+  })
+  .catch(error => {
+    console.error('캡차 이미지 로드 실패:', error);
+  });
 },
 
 // 음성 캡차 재생 메서드 수정
