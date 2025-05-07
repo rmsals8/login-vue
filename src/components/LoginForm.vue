@@ -79,9 +79,7 @@
                         <button type="button" @click="refreshCaptcha" class="captcha-button" aria-label="새로고침">
                             <span class="refresh-icon">↻</span>
                         </button>
-                        <button type="button" @click="playAudioCaptcha" class="captcha-button" aria-label="음성으로 듣기" :disabled="isAudioLoading">
-                            <span class="audio-icon" :class="{ 'loading': isAudioLoading }">♪</span>
-                        </button>
+                    
                     </div>
                 </div>
             </div>
@@ -111,8 +109,6 @@
             </div>
         </div>
       </form>
-      <audio id="captchaAudio" style="display: none;"></audio>
-    <!-- 음성 캡차 오디오 엘리먼트 (숨김) -->
   </div>
 </template>
 
@@ -152,10 +148,8 @@ data() {
       passwordFocused: false, // 비밀번호 필드 포커스 상태 추적
       showCaptcha: false, // 기본값은 false로 설정 (로그인 실패 시에만 표시)
       captchaImageUrl: '', // 캡차 이미지 URL
-     
       loginFailCount: 0, // 로그인 실패 횟수
       ipSecurity: false, // IP 보안 상태
-      isAudioLoading: false, // 음성 캡차 로딩 상태
   }
 },
 methods:{
@@ -785,20 +779,9 @@ cursor: pointer;
   cursor: not-allowed;
 }
 
-.refresh-icon, .audio-icon {
+.refresh-icon {
 color: #666;
 font-size: 18px;
-}
-
-/* 음성 캡차 로딩 애니메이션 */
-.audio-icon.loading {
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
 }
 
 .captcha-info {
