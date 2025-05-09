@@ -303,7 +303,7 @@ methods:{
     // 로그 추가 - 요청 시작 정보
     const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
     console.log('로그인 요청 시작:', {
-      url: `${apiUrl}/api/auth/login`,
+      url: `${apiUrl} `,
       data: {
         username: this.loginform.username,
         password: '******', // 비밀번호는 보안상 마스킹
@@ -497,21 +497,21 @@ methods:{
     }
   },
   kakaoLogin() {
-  this.isLoading = true;
-  this.errormessage = '';
-  this.successMessage = '';
-  
-  // API URL 설정
-  const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
-  
-  // 로그인 유지 옵션을 URL 파라미터로 전달
-  const url = `${apiUrl}/api/auth/kakao/login?remember_me=${this.loginform.rememberMe}`;
-  
-  console.log('카카오 로그인 리다이렉트:', url);
-  
-  // 카카오 로그인 API로 리다이렉트
-  window.location.href = url;
-}
+    this.isLoading = true;
+    this.errormessage = '';
+    this.successMessage = '';
+    
+    // API URL 설정
+    const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
+    
+    // 2. remember_me 파라미터 제거
+    const url = `${apiUrl}/api/auth/kakao/login`;
+    
+    console.log('카카오 로그인 리다이렉트:', url);
+    
+    // 카카오 로그인 API로 리다이렉트
+    window.location.href = url;
+  }
 }
 }
 </script>
