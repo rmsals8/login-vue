@@ -32,6 +32,7 @@
   </template>
   
   <script>
+  import axios from 'axios';
   export default {
     name: 'Dashboard',
     data() {
@@ -48,17 +49,47 @@
       }
     },
     methods: {
-      handleLogout() {
-        // 로컬 스토리지에서 사용자 정보 및 토큰 제거
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userData');
-        
-        // 홈페이지로 리다이렉트
-        this.$router.push('/');
-        
-        // 또는 새로고침
-        // window.location.href = '/';
-      }
+      async handleLogout() {
+    try {
+      // 로딩 상태 설정 (필요한 경우)
+      this.isLoading = true;
+      
+      // API URL 설정
+      const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
+      
+      // 백엔드의 /logout 엔드포인트 호출
+      await axios.get(`${apiUrl}/logout`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+        },
+        withCredentials: true  // 쿠키를 포함하여 요청 (리프레시 토큰 쿠키 전송을 위해 필요)
+      });
+      
+      // 로컬 스토리지에서 사용자 정보 및 토큰 제거
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('userData');
+      
+      console.log('로그아웃 성공');
+      
+      // 로그인 페이지로 리다이렉트
+      this.$router.push('/');
+    } catch (error) {
+      console.error('로그아웃 처리 중 오류 발생:', error);
+      
+      // 오류가 발생하더라도 로컬 스토리지 정보를 삭제하고 로그인 페이지로 이동
+      localStorage.removeItem('userToken');
+      localStorage.removeItem('userData');
+      
+      // 에러 메시지 표시 (필요한 경우)
+      this.errorMessage = '로그아웃 중 오류가 발생했습니다. 다시 시도해주세요.';
+      
+      // 로그인 페이지로 강제 이동
+      this.$router.push('/');
+    } finally {
+      // 로딩 상태 해제 (필요한 경우)
+      this.isLoading = false;
+    }
+  }
     },
     // Dashboard.vue의 mounted() 메서드에 추가
     // Dashboard.vue의 mounted() 메서드 수정
