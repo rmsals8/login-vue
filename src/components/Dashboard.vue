@@ -58,11 +58,11 @@
       const apiUrl = process.env.VUE_APP_API_URL || "https://13.209.15.189";
       
       // 백엔드의 /logout 엔드포인트 호출
-      await axios.get(`${apiUrl}/logout`, {
+      await axios.delete(`${apiUrl}/logout`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('userToken')}`
         },
-        withCredentials: true  // 쿠키를 포함하여 요청 (리프레시 토큰 쿠키 전송을 위해 필요)
+        withCredentials: true
       });
       
       // 로컬 스토리지에서 사용자 정보 및 토큰 제거
