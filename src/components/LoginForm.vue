@@ -118,16 +118,23 @@ import axios from 'axios';
 export default {
 name: 'LoginForm',
 mounted() {
-  // URL 파라미터에서 오류 확인
+   
   const urlParams = new URLSearchParams(window.location.search);
   const error = urlParams.get('error');
   
   if (error === 'kakao_login_failed') {
     this.errormessage = '카카오 로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.';
   }
-
- 
-  this.refreshCaptcha();
+  
+  // 로그인 실패 횟수가 세션 스토리지에 저장되어 있으면 복원
+  const storedFailCount = sessionStorage.getItem('loginFailCount');
+  if (storedFailCount) {
+    this.loginFailCount = parseInt(storedFailCount);
+    if (this.loginFailCount >= 3) {
+      this.showCaptcha = true;
+      this.refreshCaptcha();
+    }
+  }
 },
 data() {
   return {
@@ -395,10 +402,11 @@ methods:{
         localStorage.setItem('userData', JSON.stringify(userData));
         console.log('사용자 데이터 저장됨:', userData);
         
-        // 로그인 성공 시 캡차 초기화
+        // 로그인 성공 시 캡차 초기화 및 실패 횟수 리셋
         this.showCaptcha = false;
         this.loginFailCount = 0;
         this.loginform.captcha = '';
+        sessionStorage.removeItem('loginFailCount'); // 세션 스토리지에서도 삭제
 
         // 바로 대시보드로 리다이렉트
         console.log('대시보드로 즉시 리다이렉트 실행');
@@ -442,6 +450,9 @@ methods:{
     // 로그인 실패 횟수 증가
     this.loginFailCount++;
     console.log('로그인 실패 횟수 증가:', this.loginFailCount);
+    
+    // 세션 스토리지에 로그인 실패 횟수 저장
+    sessionStorage.setItem('loginFailCount', this.loginFailCount.toString());
     
     // 3번 이상 실패하면 캡차 표시
     if (this.loginFailCount >= 3) {
